@@ -128,7 +128,7 @@
                 Todas as Fichas
             {% endif %}
         </h2>
-        <p style="color: #6b7280;">Gerencie as fichas de produção</p>
+        <p style="color: #6b7280;">Gerencie as fichas de produção agrupadas por semana</p>
     </div>
     
     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -137,6 +137,9 @@
             ➕ Nova Ficha
         </a>
         {% else %}
+        <a href="{% url 'relatorios' %}" class="btn btn-success">
+            📊 Relatórios
+        </a>
         <a href="{% url 'gerenciar_partes' %}" class="btn btn-success">
             🔧 Gerenciar Partes
         </a>
@@ -177,27 +180,29 @@
         </div>
         
         <div class="ficha-actions">
+            {% if perfil.tipo == 'operador' and ficha.operador == user %}
+            <a href="{% url 'editar_ficha' ficha.id %}" class="btn btn-primary btn-small">
+                ✏️ Editar
+            </a>
+            {% endif %}
+            
             <a href="{% url 'visualizar_ficha' ficha.id %}" class="btn btn-secondary btn-small">
                 👁️ Ver
             </a>
-
-            {%if perfil.tipo == 'qualidade' %}
+            
+            {% if perfil.tipo == 'qualidade' %}
             <a href="{% url 'gerar_relatorio' ficha.id %}" class="btn btn-success btn-small">
                 📄 PDF
             </a>
-            {% endif %}
-
-            {% if perfil.tipo == 'qualidade' %}
-            <form action="{% url 'excluir_ficha' ficha.id %}" method="post" style="display:inline;">
+            
+            <form method="post" action="{% url 'excluir_ficha' ficha.id %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja mover esta ficha para a lixeira?');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger btn-small"
-                        onclick="return confirm('Tem certeza que deseja mover esta ficha para a lixeira?')">
-                    🗑️ Excluir
+                <button type="submit" class="btn btn-danger btn-small">
+                    🗑️
                 </button>
             </form>
             {% endif %}
         </div>
-
     </div>
     {% endfor %}
 </div>

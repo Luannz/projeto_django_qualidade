@@ -3,6 +3,8 @@
 {% block header_title %}Relatórios{% endblock %}
 
 {% block content %}
+{% load custom_filters %}
+
 <style>
     .page-header {
         display: flex;
@@ -273,7 +275,7 @@
                 <tr class="total-operador">
                     <td>TOTAL</td>
                     <td style="text-align: right;" class="quantidade-valor">
-                        {{ dados.partes.values|sum }}
+                        {{ dados.partes|sum_values }}
                     </td>
                 </tr>
             </tbody>

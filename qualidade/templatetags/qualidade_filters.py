@@ -1,5 +1,4 @@
 from django import template
-
 register = template.Library()
 
 @register.filter(name='lookup')
@@ -18,3 +17,13 @@ def get_registro_total(registro):
         return registro.total()
     except:
         return 0
+
+@register.filter
+def sum_values(value):
+    """Soma os valores de um dicionário ou lista."""
+    if isinstance(value, dict):
+        return sum(value.values())
+    elif isinstance(value, (list, tuple)):
+        return sum(value)
+    return 0
+

@@ -15,6 +15,8 @@ import hashlib
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from io import BytesIO
+from django.contrib.auth.models import User
+
 
 
 def login_view(request):

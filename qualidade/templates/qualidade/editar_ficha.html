@@ -478,21 +478,11 @@ function adicionarParteCard(parteId, parteNome) {
     
     container.insertAdjacentHTML('beforeend', cardHTML);
     
-    // Adicionar event listener para Enter no novo input
+    // Adicionar event listener de Enter no novo input
     const novoInput = document.getElementById(`input-${parteId}`);
-    novoInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            e.stopPropagation();
-            adicionarQuantidade(parteId);
-        }
-    });
-    novoInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            return false;
-        }
-    });
+    if (novoInput) {
+        adicionarEventoEnter(novoInput);
+    }
 }
 
 // Remover parte da ficha
@@ -547,13 +537,13 @@ async function removerParteCard(parteId, parteNome) {
     }
 }
 
-// Variável para controlar se já está processando
-let processandoAdicao = false;
+// Objeto para controlar requisições em andamento por parte (evita duplicação)
+const requisicoesEmAndamento = {};
 
 async function adicionarQuantidade(parteId) {
-    // Prevenir duplo-clique/duplo-envio
-    if (processandoAdicao) {
-        console.log('Já está processando uma adição...');
+    // Verificar se já existe uma requisição em andamento para esta parte
+    if (requisicoesEmAndamento[parteId]) {
+        console.log(`Requisição já em andamento para parte ${parteId}`);
         return;
     }
     
@@ -572,8 +562,8 @@ async function adicionarQuantidade(parteId) {
         return;
     }
     
-    // Marcar como processando
-    processandoAdicao = true;
+    // Marcar esta parte como tendo requisição em andamento
+    requisicoesEmAndamento[parteId] = true;
     
     try {
         const response = await fetch(`/ficha/{{ ficha.id }}/parte/${parteId}/adicionar/`, {
@@ -598,10 +588,10 @@ async function adicionarQuantidade(parteId) {
         console.error('Erro:', error);
         alert('Erro ao adicionar quantidade. Verifique sua conexão.');
     } finally {
-        // Liberar após 500ms (tempo suficiente para evitar duplicação)
+        // Liberar após um pequeno delay
         setTimeout(() => {
-            processandoAdicao = false;
-        }, 500);
+            delete requisicoesEmAndamento[parteId];
+        }, 300);
     }
 }
 
@@ -655,18 +645,28 @@ function atualizarLista(parteId, quantidades, total) {
     }
 }
 
-// Permitir adicionar com Enter ou "Ir" no celular
+// Função auxiliar para adicionar event listener de Enter em um input
+function adicionarEventoEnter(input) {
+    // Remover listeners antigos (se existirem)
+    const novoInput = input.cloneNode(true);
+    input.parentNode.replaceChild(novoInput, input);
+    
+    // Adicionar novo listener
+    novoInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            e.stopPropagation();
+            const parteId = this.id.replace('input-', '');
+            adicionarQuantidade(parteId);
+        }
+    });
+}
+
+// Inicializar event listeners quando a página carregar
 document.addEventListener('DOMContentLoaded', function() {
     const inputs = document.querySelectorAll('.quantidade-input');
-    
     inputs.forEach(input => {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Impede o envio do formulário
-                const parteId = this.id.replace('input-', '');
-                adicionarQuantidade(parteId);
-            }
-        });
+        adicionarEventoEnter(input);
     });
 });
 </script>

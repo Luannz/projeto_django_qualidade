@@ -197,16 +197,17 @@
             </div>
             
             <div class="form-group-filtro">
-                <label for="operador_id">Operador (Opcional)</label>
-                <select id="operador_id" name="operador_id" class="form-control-filtro">
-                    <option value="">Todos os operadores</option>
-                    {% for operador in operadores %}
-                    <option value="{{ operador.id }}" {% if operador_id == operador.id|stringformat:"s" %}selected{% endif %}>
-                        {{ operador.get_full_name|default:operador.username }}
-                    </option>
+                <label for="nome_ficha">Nome da Ficha (Opcional)</label>
+                <select id="nome_ficha" name="nome_ficha" class="form-control-filtro">
+                    <option value="">Todas as fichas</option>
+                    {% for nome in nomes_fichas %}
+                        <option value="{{ nome }}" {% if nome_ficha == nome %}selected{% endif %}>
+                            {{ nome }}
+                        </option>
                     {% endfor %}
                 </select>
             </div>
+
             
             <div class="form-group-filtro">
                 <label for="parte_id">Parte (Opcional)</label>
@@ -243,7 +244,7 @@
         <div>
             <h3 style="font-size: 20px; margin: 0;">Resultado da Consulta</h3>
             <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">
-                Período: {{ data_inicio|date:"d/m/Y" }} a {{ data_fim|date:"d/m/Y" }}
+                Período: {{ data_inicio|date:"d/m/Y" }} até {{ data_fim|date:"d/m/Y" }}
             </p>
         </div>
         <div style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px; font-weight: 600;">
@@ -256,6 +257,11 @@
         <div class="operador-nome">
             👤 {{ operador_nome }}
         </div>
+        {% for nome_ficha in dados.fichas %}
+            <div class="nome-ficha">
+                📄 {{ nome_ficha }}
+            </div>
+        {% endfor %}
         
         {% if dados.partes %}
         <table class="partes-tabela">

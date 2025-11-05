@@ -17,6 +17,8 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 from django.contrib.auth.models import User
 from datetime import datetime
+from datetime import date
+import locale
 
 
 
@@ -477,10 +479,13 @@ def relatorios(request):
     data_fim = request.GET.get('data_fim')
     parte_id = request.GET.get('parte_id')
     operador_id = request.GET.get('operador_id')
+    nome_ficha = request.GET.get('nome_ficha')
+   
     
     # Buscar todas as partes e operadores para os filtros
     partes = ParteCalcado.objects.filter(ativo=True, excluido=False).order_by('nome')
     operadores = User.objects.filter(perfil__tipo='operador').order_by('username')
+    nomes_fichas = (Ficha.objects.filter(excluido=False).order_by('nome_ficha').values_list('nome_ficha', flat=True).distinct())
     
     # Inicializar dados
     dados_relatorio = None
@@ -499,6 +504,10 @@ def relatorios(request):
             excluido=False
         )
         
+        # Aplicar filtro de nome_ficha se selecionado
+        if nome_ficha:
+            fichas = fichas.filter(nome_ficha=nome_ficha)
+
         # Filtrar por operador se selecionado
         if operador_id:
             fichas = fichas.filter(operador_id=operador_id)
@@ -512,9 +521,13 @@ def relatorios(request):
             if operador_nome not in dados_por_operador:
                 dados_por_operador[operador_nome] = {
                     'operador': ficha.operador,
-                    'partes': {}
+                    'partes': {},
+                    'fichas': []
                 }
             
+            if ficha.nome_ficha not in dados_por_operador[operador_nome]['fichas']:
+                dados_por_operador[operador_nome]['fichas'].append(ficha.nome_ficha)
+
             # Buscar registros da ficha
             registros = ficha.registros.all().select_related('parte')
             
@@ -539,12 +552,14 @@ def relatorios(request):
     context = {
         'partes': partes,
         'operadores': operadores,
+        'nomes_fichas': nomes_fichas,
         'dados_relatorio': dados_relatorio,
         'total_geral': total_geral,  # ✅ agora o template só exibe
-        'data_inicio': data_inicio,
-        'data_fim': data_fim,
+        'data_inicio': data_inicio_obj if data_inicio and data_fim else None,
+        'data_fim': data_fim_obj if data_inicio and data_fim else None,
         'parte_id': parte_id,
         'operador_id': operador_id,
+        'nome_ficha': nome_ficha,
     }
     return render(request, 'qualidade/relatorios.html', context)
 
@@ -566,9 +581,17 @@ def gerar_relatorio_periodo(request):
         messages.error(request, 'Selecione o período')
         return redirect('relatorios')
     
-    # Converter strings para datas
-    data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
-    data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
+    # Converter strings para datas (tratando dois formatos possíveis)
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+    try:
+        data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+    except ValueError:
+        data_inicio_obj = datetime.strptime(data_inicio, '%d de %B de %Y').date()
+
+    try:
+        data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
+    except ValueError:
+        data_fim_obj = datetime.strptime(data_fim, '%d de %B de %Y').date()
     
     # Buscar fichas
     fichas = Ficha.objects.filter(

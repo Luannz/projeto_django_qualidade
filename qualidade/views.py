@@ -345,6 +345,8 @@ def criar_ficha(request):
         messages.error(request, 'Apenas operadores podem criar fichas')
         return redirect('home')
     
+    nomes_operador = NomeOperador.objects.filter(ativo=True, excluido=False).order_by('ordem', 'nome')
+
     if request.method == 'POST':
         data = request.POST.get('data')
         nome_ficha = request.POST.get('nome_ficha')
@@ -362,6 +364,7 @@ def criar_ficha(request):
     
     context = {
         'data_hoje': date.today(),
+        'nomes_operador': nomes_operador,
     }
     return render(request, 'qualidade/criar_ficha.html', context)
 

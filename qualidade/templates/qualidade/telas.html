@@ -288,6 +288,7 @@
             opacity: 0.5;
         }
         
+
         /* Responsivo para telas menores */
         @media (max-width: 1400px) {
             .cards-grid {
@@ -318,6 +319,59 @@
                 font-size: 24px;
             }
         }
+
+        /* 🖥️ Estilo especial para TVs grandes (Full HD ou superiores) */
+        @media (min-width: 1800px) {
+            body {
+                padding: 60px;
+            }
+
+            .fichas-grid {
+                grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); /* Mais cards por linha */
+                gap: 40px;
+            }
+
+            .ficha-card {
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                transform: scale(1.05); /* Dá uma leve ampliação */
+                transition: transform 0.3s ease;
+            }
+
+            .ficha-card:hover {
+                transform: scale(1.08);
+            }
+
+            .ficha-title {
+                font-size: 36px;
+                font-weight: 800;
+            }
+
+            .ficha-info {
+                font-size: 22px;
+                color: #374151;
+            }
+
+            .ficha-badge {
+                font-size: 22px;
+                padding: 12px 24px;
+            }
+
+            .btn {
+                font-size: 20px;
+                padding: 14px 28px;
+                border-radius: 12px;
+            }
+
+            .ficha-actions {
+                display: flex;
+                justify-content: space-between;
+                gap: 20px;
+                margin-top: 20px;
+            }
+        }
+
     </style>
 </head>
 <body>

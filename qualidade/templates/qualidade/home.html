@@ -98,6 +98,37 @@
         font-size: 64px;
         margin-bottom: 20px;
     }
+
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+
+    .page-btn {
+        background: #f3f4f6;
+        color: #374151;
+        padding: 8px 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .page-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+
+    .page-btn.active {
+        background: #667eea;
+        color: white;
+        cursor: default;
+    }
+
     
     @media (max-width: 768px) {
         .fichas-grid {
@@ -213,6 +244,26 @@
     </div>
     {% endfor %}
 </div>
+{% if fichas.has_other_pages %}
+<div class="pagination-container">
+    {% if fichas.has_previous %}
+        <a href="?page={{ fichas.previous_page_number }}{% if request.GET.data %}&data={{ request.GET.data }}{% endif %}" class="page-btn">Anterior</a>
+    {% endif %}
+
+    {% for num in fichas.paginator.page_range %}
+        {% if num == fichas.number %}
+            <span class="page-btn active">{{ num }}</span>
+        {% elif num > fichas.number|add:'-3' and num < fichas.number|add:'3' %}
+            <a href="?page={{ num }}{% if request.GET.data %}&data={{ request.GET.data }}{% endif %}" class="page-btn">{{ num }}</a>
+        {% endif %}
+    {% endfor %}
+
+    {% if fichas.has_next %}
+        <a href="?page={{ fichas.next_page_number }}{% if request.GET.data %}&data={{ request.GET.data }}{% endif %}" class="page-btn">Próxima</a>
+    {% endif %}
+</div>
+{% endif %}
+
 {% else %}
 <div class="empty-state">
     <div class="empty-icon">📋</div>

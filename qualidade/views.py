@@ -19,6 +19,7 @@ from django.contrib.auth.models import User
 from datetime import datetime
 from datetime import date
 import locale
+from django.core.paginator import Paginator
 
 
 
@@ -67,9 +68,13 @@ def home(request):
     data_filtro = request.GET.get('data')
     if data_filtro:
         fichas = fichas.filter(data=data_filtro)
+
+    paginator = Paginator(fichas.order_by('-data'), 21)  #ordena por data desc
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
-        'fichas': fichas,
+        'fichas': page_obj,
         'perfil': perfil,
         'data_hoje': date.today(),
     }

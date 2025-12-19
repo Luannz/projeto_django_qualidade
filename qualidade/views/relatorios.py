@@ -7,12 +7,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.contrib.auth.models import User
+from django.db.models import Sum
 from datetime import datetime
 from io import BytesIO
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 
-from ..models import Ficha, ParteCalcado
+from ..models import Ficha, ParteCalcado, FichaInventario
 
 
 @login_required
@@ -52,7 +53,7 @@ def relatorios(request):
             data__gte=data_inicio_obj,
             data__lte=data_fim_obj,
             excluido=False
-        )
+        ).prefetch_related('registros__parte', 'operador')
         
         if nome_ficha:
             fichas = fichas.filter(nome_ficha=nome_ficha)
@@ -74,7 +75,7 @@ def relatorios(request):
 
             registros = ficha.registros.all().select_related('parte')
             if parte_id:
-                registros = registros.filter(parte_id=parte_id)
+                registros = ficha.registros.all()
 
             for registro in registros:
                 parte_nome = registro.parte.nome
@@ -108,6 +109,9 @@ def relatorios(request):
     }
     
     return render(request, 'qualidade/relatorios.html', context)
+
+
+
 
 
 @login_required
@@ -162,6 +166,93 @@ def gerar_relatorio(request, ficha_id):
     response['Content-Disposition'] = f'attachment; filename="relatorio_{ficha.id}.pdf"'
     
     return response
+
+@login_required
+def gerar_relatorio_ficha_inventario(request, ficha_id):
+    """Gerar relatório PDF de uma ficha de inventário"""
+    ficha = get_object_or_404(FichaInventario, id=ficha_id)
+
+    itens = ficha.itens.select_related("modelo", "cor", "tamanho")
+
+    # Totais
+    totais = itens.aggregate(
+        total_pd=Sum("quantidade_pe_direito"),
+        total_pe=Sum("quantidade_pe_esquerdo"),
+    )
+
+    total_pd = totais["total_pd"] or 0
+    total_pe = totais["total_pe"] or 0
+    total_pares = sum(
+    min(item.quantidade_pe_direito, item.quantidade_pe_esquerdo)
+    for item in itens
+    )
+
+
+    # Criar PDF
+    buffer = BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    # Cabeçalho
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(50, height - 50, "Relatório de Ficha de Inventário")
+
+    p.setFont("Helvetica", 11)
+    p.drawString(50, height - 75, f"Ficha nº: {ficha.id}")
+    p.drawString(50, height - 95, f"Data da ficha: {ficha.data.strftime('%d/%m/%Y')}")
+    p.drawString(
+        50,
+        height - 115,
+        f"Operador: {ficha.operador.get_full_name() or ficha.operador.username}"
+    )
+    p.drawString(50,height - 135,f"Nome na ficha: {ficha.nome_ficha}")  # ou ficha.nome_ficha
+    # Totais gerais
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, height - 170, f"Total Pé Direito: {total_pd}")
+    p.drawString(250, height - 170, f"Total Pé Esquerdo: {total_pe}")
+    p.drawString(450, height - 170, f"Total Pares: {total_pares}")
+
+
+    # Cabeçalho da tabela
+    y = height - 205
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y, "Modelo")
+    p.drawString(180, y, "Cor")
+    p.drawString(280, y, "Tam.")
+    p.drawString(340, y, "PD")
+    p.drawString(390, y, "PE")
+    p.drawString(440, y, "Total")
+
+    y -= 20
+    p.setFont("Helvetica", 10)
+
+    # Itens
+    for item in itens:
+        if y < 50:
+            p.showPage()
+            y = height - 50
+            p.setFont("Helvetica", 10)
+
+        total_item = item.quantidade_pe_direito + item.quantidade_pe_esquerdo
+
+        p.drawString(50, y, item.modelo.nome[:20])
+        p.drawString(180, y, item.cor.nome[:15])
+        p.drawString(280, y, str(item.tamanho.numero))
+        p.drawString(340, y, str(item.quantidade_pe_direito))
+        p.drawString(390, y, str(item.quantidade_pe_esquerdo))
+        p.drawString(440, y, str(total_item))
+
+        y -= 18
+
+    p.save()
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f'attachment; filename="relatorio_ficha_inventario_{ficha.id}.pdf"'
+    )
+    return response
+
 
 
 @login_required

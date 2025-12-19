@@ -1,0 +1,25 @@
+/* Navbar */
+.navbar.bg-primary {
+    background-color: #275968 !important;
+}
+
+/* Botões primários */
+.btn-primary {
+    background-color: #275968;
+    border-color: #275968;
+}
+
+.btn-primary:hover {
+    background-color: #275968;
+    border-color: #275968;
+}
+
+/* Cards header */
+.card-header.bg-primary {
+    background-color: #275968!important;
+}
+
+/* Links ativos da navbar */
+.navbar-dark .navbar-nav .nav-link.active {
+    color: #bbf7d0;
+}

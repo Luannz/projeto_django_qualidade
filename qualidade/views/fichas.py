@@ -10,56 +10,109 @@ from django.utils import timezone
 from django.core.paginator import Paginator
 from datetime import date
 
-from ..models import Ficha, ParteCalcado, NomeOperador
+from ..models import Ficha, ParteCalcado, NomeOperador, FichaInventario
 
 
 @login_required
 def home(request):
-    """Página inicial - lista de fichas"""
-    user = request.user
-    
-    # Verificar se usuário tem perfil
-    try:
-        perfil = user.perfil
-    except:
-        messages.error(request, 'Seu usuário não possui perfil definido. Contate o administrador.')
-        return redirect('logout')
-    
-    # Filtrar fichas NÃO EXCLUÍDAS baseado no perfil
-    if perfil.tipo == 'operador':
-        fichas = Ficha.objects.filter(operador=user, excluido=False)
-    else:  # qualidade
-        fichas = Ficha.objects.filter(excluido=False)
-    
-    # Filtro por data
+    perfil = request.user.perfil
     data_filtro = request.GET.get('data')
+
+    # Grupo do usuário
+    grupo_usuario = request.user.groups.first()
+    grupo_nome = grupo_usuario.name if grupo_usuario else None
+
+    # ----- FICHAS NORMAIS -----
+    fichas = Ficha.objects.filter(excluido=False).select_related(
+        'operador'
+    ).prefetch_related('registros')
+
+    # Operador só vê fichas do próprio setor
+    if perfil.tipo == 'operador':
+        if grupo_nome:
+            fichas = fichas.filter(setor=grupo_nome)
+        else:
+            fichas = fichas.filter(operador=request.user)
+
+    # Injetora NÃO vê fichas normais
+    if grupo_nome == "Injetora":
+        fichas = Ficha.objects.none()
+
+    # Qualidade vê tudo → não filtra fichas
+
+    # Filtro por data
     if data_filtro:
         fichas = fichas.filter(data=data_filtro)
 
-    # limitar o número de páginas (10 paginas x 21) que da 10 páginas com 21 fichas
-    fichas_queryset = fichas.order_by('-data', '-id', '-criada_em')[:210]
+    # Paginação
+    paginator = Paginator(fichas, 12)
+    page = request.GET.get("page")
+    fichas = paginator.get_page(page)
 
-    paginator = Paginator(fichas_queryset, 21)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
+    # ----- FICHAS DE INVENTÁRIO -----
+    if grupo_nome in ["Injetora", "Qualidade"]:
+        if perfil.tipo == "operador":
+            fichas_inventario = FichaInventario.objects.filter(
+                operador=request.user,excluido=False
+            ).order_by("-data")
+        else:
+            fichas_inventario = FichaInventario.objects.filter(
+                excluido=False
+            ).order_by("-data")
+    else:
+        fichas_inventario = None  # não mostra inventário
+    #--Filtro de Data--#    
+    if data_filtro:
+        if fichas_inventario is not None:
+            fichas_inventario = fichas_inventario.filter(data=data_filtro)
+
     context = {
-        'fichas': page_obj,
-        'perfil': perfil,
-        'data_hoje': date.today(),
+        "perfil": perfil,
+        "grupo_usuario": grupo_nome,
+        "fichas": fichas,
+        "fichas_inventario": fichas_inventario,
+        "data_hoje": date.today(),
     }
-    return render(request, 'qualidade/home.html', context)
+
+    return render(request, "qualidade/home.html", context)
 
 
 @login_required
 def criar_ficha(request):
-    """Criar nova ficha"""
-    # Verificar se é operador
+
+    # Apenas operadores podem criar ficha
     if request.user.perfil.tipo != 'operador':
         messages.error(request, 'Apenas operadores podem criar fichas')
         return redirect('home')
-    
-    nomes_operador = NomeOperador.objects.filter(ativo=True, excluido=False).order_by('ordem', 'nome')
+
+    # --- SE FOR INJETORA ---
+    if request.user.groups.filter(name='Injetora').exists():
+
+        if request.method == 'POST':
+            nome_ficha = request.POST.get('nome_ficha')
+            data = request.POST.get('data')
+
+            if nome_ficha and data:
+                ficha_inventario = FichaInventario.objects.create(
+                    operador=request.user,
+                    nome_ficha=nome_ficha,
+                    data=data,
+                    setor="INJETORA"
+                )
+
+                messages.success(request, "Ficha criada com sucesso!")
+                return redirect('visualizar_ficha_inventario', ficha_id=ficha_inventario.id)
+
+            messages.error(request, "Preencha todos os campos.")
+
+        return render(request, 'qualidade/criar_ficha_inventario.html', {
+            'data_hoje': date.today(),
+        })
+
+    # --- OUTROS SETORES ---
+    nomes_operador = NomeOperador.objects.filter(
+        ativo=True, excluido=False
+    ).order_by('ordem', 'nome')
 
     if request.method == 'POST':
         data = request.POST.get('data')
@@ -69,18 +122,18 @@ def criar_ficha(request):
             ficha = Ficha.objects.create(
                 operador=request.user,
                 data=data,
-                nome_ficha=nome_ficha
+                nome_ficha=nome_ficha,
             )
             messages.success(request, 'Ficha criada com sucesso!')
             return redirect('editar_ficha', ficha_id=ficha.id)
         else:
-            messages.error(request, 'Preencha todos os campos')
-    
-    context = {
+            messages.error(request, 'Preencha todos os campos.')
+
+    return render(request, 'qualidade/criar_ficha.html', {
         'data_hoje': date.today(),
         'nomes_operador': nomes_operador,
-    }
-    return render(request, 'qualidade/criar_ficha.html', context)
+    })
+
 
 
 @login_required
@@ -144,61 +197,64 @@ def visualizar_ficha(request, ficha_id):
 
 @login_required
 def excluir_ficha(request, ficha_id):
-    """Mover ficha para lixeira (apenas qualidade)"""
     if request.user.perfil.tipo != 'qualidade':
         messages.error(request, 'Apenas usuários da qualidade podem excluir fichas')
         return redirect('home')
-    
+
     if request.method == 'POST':
-        try:
-            ficha = Ficha.objects.get(id=ficha_id, excluido=False)
-            ficha.excluido = True
-            ficha.excluido_em = timezone.now()
-            ficha.excluido_por = request.user
-            ficha.save()
-            messages.success(request, f'Ficha "{ficha.nome_ficha}" movida para a lixeira!')
-        except Ficha.DoesNotExist:
-            messages.error(request, 'Ficha não encontrada')
-    
+        ficha = get_object_or_404(Ficha, id=ficha_id, excluido=False)
+
+        ficha.excluido = True
+        ficha.excluido_em = timezone.now()
+        ficha.excluido_por = request.user
+        ficha.save()
+        messages.success(request, f'Ficha de inventário "{ficha.nome_ficha}" movida para a lixeira!')
     return redirect('home')
 
 
 @login_required
 def lixeira_fichas(request):
-    """Lixeira de fichas (apenas qualidade)"""
+    """Lixeira de fichas (Ficha e FichaInventario)"""
     if request.user.perfil.tipo != 'qualidade':
         messages.error(request, 'Apenas usuários da qualidade podem acessar a lixeira')
         return redirect('home')
-    
+
     if request.method == 'POST':
         acao = request.POST.get('acao')
         ficha_id = request.POST.get('ficha_id')
-        
-        if acao == 'restaurar':
-            try:
+        tipo = request.POST.get('tipo')
+
+        try:
+            if tipo == 'Inventario':
+                ficha = FichaInventario.objects.get(id=ficha_id, excluido=True)
+            else:
                 ficha = Ficha.objects.get(id=ficha_id, excluido=True)
+
+            if acao == 'restaurar':
                 ficha.excluido = False
                 ficha.excluido_em = None
                 ficha.excluido_por = None
                 ficha.save()
-                messages.success(request, f'Ficha "{ficha.nome_ficha}" restaurada com sucesso!')
-            except Ficha.DoesNotExist:
-                messages.error(request, 'Ficha não encontrada na lixeira')
-        
-        elif acao == 'excluir_permanente':
-            try:
-                ficha = Ficha.objects.get(id=ficha_id, excluido=True)
-                nome_ficha = ficha.nome_ficha
+                messages.success(request, f'{ficha.tipo_ficha} "{ficha.nome_ficha}" restaurada com sucesso!')
+
+            elif acao == 'excluir_permanente':
+                nome = ficha.nome_ficha
                 ficha.delete()
-                messages.success(request, f'Ficha "{nome_ficha}" excluída permanentemente!')
-            except Ficha.DoesNotExist:
-                messages.error(request, 'Ficha não encontrada na lixeira')
-        
+                messages.success(request, f'{ficha.tipo_ficha} "{nome}" excluída permanentemente!')
+
+        except (Ficha.DoesNotExist, FichaInventario.DoesNotExist):
+            messages.error(request, 'Ficha não encontrada na lixeira')
+
         return redirect('lixeira_fichas')
-    
-    # Listar apenas fichas EXCLUÍDAS
-    fichas_excluidas = Ficha.objects.filter(excluido=True).order_by('-excluido_em')
-    
+
+    # GET → listar fichas excluídas
+    fichas_excluidas = list(Ficha.objects.filter(excluido=True)) + list(
+        FichaInventario.objects.filter(excluido=True)
+    )
+
+    # Ordenar pela data de exclusão (mais recente primeiro)
+    fichas_excluidas.sort(key=lambda f: f.excluido_em or 0, reverse=True)
+
     context = {
         'fichas': fichas_excluidas,
     }

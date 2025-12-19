@@ -1,0 +1,634 @@
+{% extends 'qualidade/base.html' %}
+
+{% block header_title %}Visualizar Inventário{% endblock %}
+
+{% block content %}
+<style>
+    /* ========== CABEÇALHO DA FICHA ========== */
+    .ficha-header-info {
+        background: linear-gradient(135deg, #b1ad7eff 0%, #686b37ff 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .ficha-header-info h2 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    
+    .ficha-meta {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 16px;
+    }
+
+    /* ========== ESTATÍSTICAS ========== */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+    
+    .stat-value {
+        color: #111827;
+        font-size: 32px;
+        font-weight: 700;
+    }
+
+    /* ========== FILTROS ========== */
+    .filtros-wrapper {
+        background: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .filtros-wrapper .form-select {
+        display: inline-block;
+        width: auto;
+        min-width: 150px;
+        padding: 10px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.2s ease;
+    }
+
+    .filtros-wrapper .form-select:focus {
+        outline: none;
+        border-color: #b1ad7eff;
+    }
+
+    .filtros-wrapper .btn {
+        white-space: nowrap;
+    }
+
+    /* ========== TABELA ========== */
+    .tabela-wrapper {
+        overflow-x: auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .tabela-fichas {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .tabela-fichas thead {
+        background: linear-gradient(135deg, #b1ad7eff 0%, #686b37ff 100%);
+        color: white;
+    }
+    
+    .tabela-fichas th {
+        padding: 18px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 16px;
+        position: sticky;
+        top: 0;
+    }
+    
+    .tabela-fichas tbody tr {
+        transition: background 0.2s ease;
+    }
+    
+    .tabela-fichas tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+    
+    .tabela-fichas tbody tr:hover {
+        background: #f3f4f6;
+    }
+    
+    .tabela-fichas td {
+        padding: 15px 18px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .coluna-modelo {
+        font-weight: 700;
+        color: #111827;
+        font-size: 16px;
+    }
+    
+    .coluna-cor {
+        font-weight: 600;
+        color: #4b5563;
+        font-size: 15px;
+    }
+    
+    .coluna-tamanho {
+        font-weight: 600;
+        color: #4b5563;
+        font-size: 15px;
+    }
+    
+    .coluna-quantidade {
+        font-weight: 700;
+        color: #059669;
+        font-size: 18px;
+        text-align: center;
+    }
+
+    /* ========== PAGINAÇÃO ========== */
+    .paginacao-wrapper {
+        padding: 20px;
+        border-top: 1px solid #e5e7eb;
+        background: #f9fafb;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .pagination .page-item {
+        display: inline-block;
+    }
+
+    .pagination .page-link {
+        display: inline-block;
+        padding: 10px 18px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        background: white;
+        color: #b1ad7eff;
+        border: 2px solid #e5e7eb;
+    }
+
+    .pagination .page-item:not(.disabled):not(.active) .page-link:hover {
+        background: linear-gradient(135deg, #b1ad7eff 0%, #686b37ff 100%);
+        color: white;
+        border-color: #b1ad7eff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(177, 173, 126, 0.3);
+    }
+
+    .pagination .page-item.active .page-link {
+        background: linear-gradient(135deg, #b1ad7eff 0%, #686b37ff 100%);
+        color: white;
+        border: 2px solid transparent;
+        font-weight: 600;
+        cursor: default;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        background: #f3f4f6;
+        color: #9ca3af;
+        border: 2px solid #e5e7eb;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    /* ========== TOTAL GERAL ========== */
+    .total-geral {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    
+    .total-geral-valor {
+        font-size: 48px;
+        font-weight: 700;
+        margin: 10px 0;
+    }
+
+    /* ========== EMPTY STATE ========== */
+    .empty-state {
+        background: white;
+        padding: 60px 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        color: #374151;
+        margin-bottom: 10px;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        color: #6b7280;
+        margin-bottom: 20px;
+    }
+
+    /* ========== BOTÕES DE AÇÃO ========== */
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* ========== RESPONSIVIDADE TABLET (768px - 1024px) ========== */
+    @media screen and (max-width: 1024px) {
+        .ficha-header-info,
+        .filtros-wrapper,
+        .total-geral {
+            padding: 20px;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+        }
+
+        .tabela-fichas th,
+        .tabela-fichas td {
+            padding: 14px;
+            font-size: 14px;
+        }
+
+        .total-geral-valor {
+            font-size: 42px;
+        }
+    }
+
+    /* ========== RESPONSIVIDADE MOBILE (até 768px) ========== */
+    @media screen and (max-width: 768px) {
+        .ficha-header-info h2 {
+            font-size: 22px;
+        }
+
+        .ficha-meta {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .meta-item {
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 15px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+        }
+
+        /* Filtros em coluna */
+        .filtros-wrapper {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filtros-wrapper .form-select {
+            width: 100%;
+        }
+
+        .filtros-wrapper .btn {
+            width: 100%;
+        }
+
+        /* Tabela responsiva */
+        .tabela-wrapper {
+            border-radius: 10px;
+        }
+
+        .tabela-fichas {
+            font-size: 13px;
+        }
+
+        .tabela-fichas th,
+        .tabela-fichas td {
+            padding: 12px 10px;
+            font-size: 13px;
+        }
+
+        .coluna-modelo {
+            font-size: 14px;
+        }
+
+        .coluna-cor,
+        .coluna-tamanho {
+            font-size: 13px;
+        }
+
+        .coluna-quantidade {
+            font-size: 16px;
+        }
+
+        .total-geral {
+            padding: 20px 15px;
+        }
+
+        .total-geral-valor {
+            font-size: 36px;
+        }
+
+        .empty-state {
+            padding: 40px 15px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Paginação responsiva */
+        .paginacao-wrapper {
+            padding: 15px;
+        }
+
+        .pagination {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pagination .page-link {
+            width: 100%;
+            text-align: center;
+            padding: 12px 16px;
+        }
+
+        /* Botões de ação */
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+        }
+    }
+
+    /* ========== MOBILE PEQUENO (até 480px) ========== */
+    @media screen and (max-width: 480px) {
+        .ficha-header-info,
+        .filtros-wrapper,
+        .stat-card,
+        .tabela-wrapper,
+        .total-geral {
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .ficha-header-info h2 {
+            font-size: 20px;
+        }
+
+        .total-geral-valor {
+            font-size: 32px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+        }
+    }
+
+    /* ========== AJUSTES PARA DISPOSITIVOS TOUCH ========== */
+    @media (hover: none) and (pointer: coarse) {
+        .filtros-wrapper .form-select,
+        .filtros-wrapper .btn,
+        .pagination .page-link,
+        .action-buttons .btn {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+</style>
+
+<!-- ========== CABEÇALHO DA FICHA ========== -->
+<div class="ficha-header-info">
+    <h2>📦 {{ ficha.nome_ficha }}</h2>
+    <div class="ficha-meta">
+        <div class="meta-item">
+            <span>📅</span>
+            <span>{{ ficha.data|date:"d/m/Y" }}</span>
+        </div>
+        <div class="meta-item">
+            <span>👤</span>
+            <span>{{ ficha.operador.get_full_name|default:ficha.operador.username }}</span>
+        </div>
+        <div class="meta-item">
+            <span>🕐</span>
+            <span>Criada em {{ ficha.criada_em|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="meta-item">
+            <span>🏢</span>
+            <span>{{ ficha.setor }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- ========== ESTATÍSTICAS ========== -->
+{% if itens %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total de Itens</div>
+        <div class="stat-value">{{ itens.count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total de Pares</div>
+        <div class="stat-value">{{ total_pares }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Modelos Diferentes</div>
+        <div class="stat-value">{{ modelos_diferentes }}</div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ========== FILTROS ========== -->
+<form method="get" class="filtros-wrapper">
+    <select name="modelo" class="form-select">
+        <option value="">Todos os modelos</option>
+        {% for modelo in modelos %}
+        <option value="{{ modelo.id }}" {% if modelo_selecionado == modelo.id|stringformat:"s" %}selected{% endif %}>
+            {{ modelo.nome }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select name="cor" class="form-select">
+        <option value="">Todas as cores</option>
+        {% for cor in cores %}
+        <option value="{{ cor.id }}" {% if cor_selecionada == cor.id|stringformat:"s" %}selected{% endif %}>
+            {{ cor.nome }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <select name="numero" class="form-select">
+        <option value="">Todos os tamanhos</option>
+        {% for numero in numeros %}
+        <option value="{{ numero }}" {% if numero_selecionado == numero %}selected{% endif %}>
+            Nº {{ numero }}
+        </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit" class="btn btn-primary">🔍 Filtrar</button>
+
+    {% if modelo_selecionado or cor_selecionada or numero_selecionado %}
+    <a href="{% url 'visualizar_ficha_inventario' ficha.id %}" class="btn btn-secondary">🔄 Limpar Filtros</a>
+    {% endif %}
+</form>
+
+<!-- ========== CONTEÚDO PRINCIPAL ========== -->
+{% if itens.exists %}
+    <!-- Tabela com resultados -->
+    <div class="tabela-wrapper">
+        <table class="tabela-fichas">
+            <thead>
+                <tr>
+                    <th>Modelo</th>
+                    <th>Cor</th>
+                    <th>Tamanho</th>
+                    <th style="text-align: center;">Pé Esquerdo</th>
+                    <th style="text-align: center;">Pé Direito</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens_paginados %}
+                <tr>
+                    <td class="coluna-modelo">{{ item.modelo.nome }}</td>
+                    <td class="coluna-cor">{{ item.cor.nome }}</td>
+                    <td class="coluna-tamanho">Nº {{ item.tamanho.numero }}</td>
+                    <td class="coluna-quantidade">{{ item.quantidade_pe_esquerdo }}</td>
+                    <td class="coluna-quantidade">{{ item.quantidade_pe_direito }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Paginação -->
+        {% if itens_paginados.paginator.num_pages > 1 %}
+        <div class="paginacao-wrapper">
+            <nav aria-label="Paginação dos itens">
+                <ul class="pagination">
+                    <!-- Botão Anterior -->
+                    {% if itens_paginados.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens_paginados.previous_page_number }}{% if modelo_selecionado %}&modelo={{ modelo_selecionado }}{% endif %}{% if cor_selecionada %}&cor={{ cor_selecionada }}{% endif %}{% if numero_selecionado %}&numero={{ numero_selecionado }}{% endif %}">
+                            ‹ Anterior
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">‹ Anterior</span>
+                    </li>
+                    {% endif %}
+
+                    <!-- Página atual -->
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ itens_paginados.number }} de {{ itens_paginados.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    <!-- Botão Próxima -->
+                    {% if itens_paginados.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ itens_paginados.next_page_number }}{% if modelo_selecionado %}&modelo={{ modelo_selecionado }}{% endif %}{% if cor_selecionada %}&cor={{ cor_selecionada }}{% endif %}{% if numero_selecionado %}&numero={{ numero_selecionado }}{% endif %}">
+                            Próxima ›
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Próxima ›</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Total Geral -->
+    <div class="total-geral">
+        <div>TOTAL GERAL DE PARES</div>
+        <div class="total-geral-valor">{{ total_pares }}</div>
+        <div style="font-size: 14px; opacity: 0.9;">Soma de todos os itens com dois pés</div>
+    </div>
+
+{% else %}
+    <!-- Empty State - quando filtro não encontra resultados -->
+    <div class="empty-state">
+        <div style="font-size: 64px; margin-bottom: 20px;">🔍</div>
+        <h3>Nenhum item encontrado</h3>
+        <p>Não há itens que correspondam aos filtros selecionados.</p>
+        <a href="{% url 'visualizar_ficha_inventario' ficha.id %}" class="btn btn-primary">
+            🔄 Limpar Filtros e Ver Todos
+        </a>
+    </div>
+{% endif %}
+
+<!-- ========== BOTÕES DE AÇÃO ========== -->
+<div class="action-buttons">
+    <a href="{% url 'home' %}" class="btn btn-secondary">← Voltar</a>
+    
+    {% if user.perfil.tipo == 'operador' and ficha.operador == user %}
+    <a href="{% url 'editar_ficha_inventario' ficha.id %}" class="btn btn-primary">✏️ Editar</a>
+    {% endif %}
+    
+    {% if user.perfil.tipo == 'qualidade' %}
+    <a href="{% url 'gerar_relatorio_ficha_inventario' ficha.id %}" class="btn btn-success" onclick="alert('Relatório PDF em desenvolvimento')">📄 Gerar PDF</a>
+    {% endif %}
+</div>
+
+{% endblock %}

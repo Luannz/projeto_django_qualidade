@@ -260,7 +260,7 @@
 
 <div class="ficha-info-bar">
     <h2>{{ ficha.nome_ficha }}</h2>
-    <div>📅 {{ ficha.data|date:"d/m/Y" }} | 👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }}</div>
+    <div>📅 {{ ficha.data|date:"d/m/Y" }} | 👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }} | 🏢 {{ ficha.setor }}</div>
 </div>
 
 {% if pode_editar %}

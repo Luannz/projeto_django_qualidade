@@ -1,0 +1,652 @@
+{% extends 'qualidade/base.html' %}
+{% load qualidade_filters %}
+{% block header_title %}Gerenciar Modelos{% endblock %}
+
+{% block content %}
+<style>
+    .container-modelos {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+    
+    .header-section {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    
+    .header-buttons {
+        border: 2px solid #667eea;
+        padding: 15px;
+        border-radius: 15px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        width: fit-content;
+    }
+    
+    .form-criar-modelo {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 15px;
+    }
+    
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        font-size: 16px;
+        background: rgba(255,255,255,0.95);
+        color: #111827;
+    }
+    
+    .form-input:focus {
+        outline: none;
+        border-color: white;
+        background: white;
+    }
+    
+    .form-hint {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+    
+    .form-select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: 10px;
+        font-size: 16px;
+        background: rgba(255,255,255,0.95);
+        color: #111827;
+        min-height: 120px;
+    }
+    
+    .form-select:focus {
+        outline: none;
+        border-color: white;
+        background: white;
+    }
+    
+    .category-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+    
+    .tamanhos-group {
+        padding: 15px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .tamanhos-group-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .btn-toggle-all {
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.4);
+        background: rgba(255,255,255,0.2);
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-toggle-all:hover {
+        background: rgba(255,255,255,0.3);
+    }
+    
+    .tamanhos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+        gap: 8px;
+    }
+    
+    .tamanho-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        cursor: pointer;
+        padding: 6px 8px;
+        background: rgba(255,255,255,0.95);
+        border-radius: 8px;
+        color: #111827;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    
+    .tamanho-label:hover {
+        background: white;
+        transform: translateY(-1px);
+    }
+    
+    .tamanho-label input[type="checkbox"] {
+        cursor: pointer;
+        margin: 0;
+    }
+    
+    .tamanho-label span {
+        font-weight: 600;
+        font-size: 13px;
+    }
+    
+    .models-list {
+        display: grid;
+        gap: 25px;
+    }
+    
+    .model-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 15px;
+        padding: 25px;
+        transition: all 0.3s;
+    }
+    
+    .model-card:hover {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border-color: #667eea;
+    }
+    
+    .model-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e5e7eb;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .model-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+    }
+    
+    .model-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+    
+    .section {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 10px;
+    }
+    
+    .section-title {
+        font-weight: 700;
+        color: #374151;
+        margin-bottom: 15px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .items-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .item-badge {
+        background: white;
+        border: 2px solid #e5e7eb;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .add-item-form {
+        margin-top: 15px;
+    }
+    
+    .add-item-form .form-select {
+        min-height: 40px;
+        padding: 8px 12px;
+        font-size: 14px;
+        background: white;
+        border: 2px solid #e5e7eb;
+        color: #374151;
+        margin-bottom: 8px;
+    }
+    
+    .add-item-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        margin-bottom: 8px;
+    }
+    
+    .section-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .btn-link {
+        background: none;
+        border: none;
+        color: #667eea;
+        cursor: pointer;
+        font-size: 11px;
+        text-decoration: underline;
+        padding: 2px 6px;
+    }
+    
+    .btn-link:hover {
+        color: #764ba2;
+    }
+    
+    .tamanhos-section-group {
+        padding: 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .tamanhos-section-group strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+    
+    .tamanhos-section-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .tamanhos-section-grid label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+        padding: 4px 8px;
+        background: #f9fafb;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+    
+    .tamanhos-section-grid label:hover {
+        background: #f3f4f6;
+    }
+    
+    .btn-small {
+        padding: 6px 12px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+    
+    .btn-icon {
+        padding: 6px 10px;
+        font-size: 14px;
+    }
+    
+    .success-message {
+        margin-top: 15px;
+        padding: 10px;
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        border-radius: 8px;
+        text-align: center;
+        color: #166534;
+        font-size: 13px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6b7280;
+    }
+    
+    @media (max-width: 968px) {
+        .model-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .header-buttons {
+            width: 100%;
+        }
+        
+        .tamanhos-grid {
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        }
+    }
+    
+    @media (max-width: 640px) {
+        .container-modelos {
+            padding: 0 10px;
+        }
+        
+        .header-section,
+        .form-criar-modelo,
+        .model-card,
+        .section {
+            padding: 20px;
+        }
+        
+        .model-name {
+            font-size: 20px;
+        }
+    }
+</style>
+
+<div class="container-modelos">
+    <div class="header-section">
+        <h2 style="font-size: 28px; color: #111827; margin-bottom: 5px;">
+            👟 Gerenciar Modelos de Calçados
+        </h2>
+        <p style="color: #6b7280; margin-bottom: 30px">Cadastre modelos completos com cores e tamanhos disponíveis</p>
+        <div class="header-buttons">
+            <a href="{% url 'home' %}" class="btn btn-secondary">← Voltar</a>
+            <a href="{% url 'gerenciar_cores' %}" class="btn btn-success">Gerenciar Cores</a>
+            <a href="{% url 'lixeira_modelos' %}" class="btn btn-danger">🗑️ Lixeira</a>
+        </div>
+    </div>
+    
+    <!-- FORMULÁRIO PARA CRIAR NOVO MODELO COMPLETO -->
+    <div class="form-criar-modelo">
+        <h3 style="font-size: 22px; margin-bottom: 20px;">➕ Criar Novo Modelo</h3>
+        <form method="post" id="form-criar-modelo">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="adicionar_modelo">
+            
+            <div class="form-group">
+                <label class="form-label">📝 Nome do Modelo</label>
+                <input type="text" 
+                    name="nome_modelo" 
+                    class="form-input" 
+                    placeholder="Ex: Air Max 90, Nike Dunk, Adidas Forum..."
+                    required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="cores">🎨 Selecione a Cor</label>
+                <select name="cores" id="cores" class="form-select" multiple required>
+                    <option value="" disabled selected>Escolha uma cor</option>
+                    {% for cor in cores %}
+                        <option value="{{ cor.pk }}">{{ cor.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">📏 Tamanhos Disponíveis</label>
+                
+                <div class="category-buttons">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="mostrarInfantilCriacao()">
+                        👶 Infantil (26-36)
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-small" onclick="mostrarAdultoCriacao()">
+                        👤 Adulto (34-45)
+                    </button>
+                </div>
+
+                <!-- GRUPO INFANTIL -->
+                <div id="grupo-infantil-criacao" class="tamanhos-group" style="display:none;">
+                    <div class="tamanhos-group-header">
+                        <strong>Selecione os tamanhos infantis:</strong>
+                        <button type="button" class="btn-toggle-all" onclick="toggleCheckGroup('grupo-infantil-criacao')">
+                            Marcar todos
+                        </button>
+                    </div>
+
+                    <div class="tamanhos-grid">
+                        {% for n in tamanhos_infantil %}
+                        <label class="tamanho-label">
+                            <input type="checkbox" name="tamanhos" value="{{ n }}">
+                            <span>{{ n }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- GRUPO ADULTO -->
+                <div id="grupo-adulto-criacao" class="tamanhos-group" style="display:none;">
+                    <div class="tamanhos-group-header">
+                        <strong>Selecione os tamanhos adultos:</strong>
+                        <button type="button" class="btn-toggle-all" onclick="toggleCheckGroup('grupo-adulto-criacao')">
+                            Marcar todos
+                        </button>
+                    </div>
+
+                    <div class="tamanhos-grid">
+                        {% for n in tamanhos_adulto %}
+                        <label class="tamanho-label">
+                            <input type="checkbox" name="tamanhos" value="{{ n }}">
+                            <span>{{ n }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="form-hint">💡 Clique em um dos botões acima para selecionar os tamanhos</div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="background: white; color: #667eea;">
+                ✨ Criar Modelo Completo
+            </button>
+        </form>
+    </div>
+    
+    <!-- LISTA DE MODELOS EXISTENTES -->
+    {% if modelos %}
+    <div class="models-list">
+        {% for modelo in modelos %}
+        <div class="model-card">
+            <div class="model-header">
+                <div class="model-name">{{ modelo.nome }}</div>
+                <form method="post" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir este modelo?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="mover_lixeira">
+                    <input type="hidden" name="modelo_id" value="{{ modelo.id }}">
+                    <button type="submit" class="btn btn-danger btn-icon">🗑️</button>
+                </form>
+            </div>
+            
+            <div class="model-content">
+                <!-- CORES -->
+                <div class="section">
+                    <div class="section-title">🎨 Cores ({{ modelo.cores.count }})</div>
+                    
+                    <div class="items-list">
+                        {% for cor in modelo.cores.all %}
+                            {% if not cor.excluido %}
+                                <span class="item-badge">{{ cor.nome }}</span>
+                            {% endif %}
+                        {% empty %}
+                            <div class="item-badge">— sem cores —</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- SELECT PARA ADICIONAR NOVAS CORES -->
+                    <form method="post" class="add-item-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="adicionar_cor">
+                        <input type="hidden" name="modelo_id" value="{{ modelo.id }}">
+
+                        <select name="cores" class="form-select" required>
+                            <option value="" disabled selected>Selecione uma cor…</option>
+                            {% for cor in cores %}
+                                {% if cor not in modelo.cores.all %}
+                                    <option value="{{ cor.id }}">{{ cor.nome }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+
+                        <button type="submit" class="btn btn-primary btn-small">
+                            + Adicionar cor
+                        </button>
+                    </form>
+                </div>
+                
+                <!-- TAMANHOS -->
+                <div class="section">
+                    <div class="section-title">📏 Tamanhos ({{ modelo.tamanhos_unicos|length }})</div>
+                    <div class="items-list">
+                        {% for numero in modelo.tamanhos_unicos %}
+                            <span class="item-badge">{{ numero }}</span>
+                        {% empty %}
+                            <div class="item-badge">— sem tamanhos —</div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if modelo.tamanhos_infantil_disponiveis or modelo.tamanhos_adulto_disponiveis %}
+                    <form method="post" class="add-item-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="acao" value="adicionar_tamanho">
+                        <input type="hidden" name="modelo_id" value="{{ modelo.id }}">
+
+                        <div class="section-buttons">
+                            {% if modelo.tamanhos_infantil_disponiveis %}
+                            <button type="button" class="btn btn-secondary btn-small" onclick="mostrarInfantil('{{ modelo.id }}')">
+                                👶 Infantil
+                            </button>
+                            <button type="button" class="btn-link" onclick="toggleCheckGroup('grupo-infantil-{{ modelo.id }}')">Marcar todos</button>
+                            {% endif %}
+                            {% if modelo.tamanhos_adulto_disponiveis %}
+                            <button type="button" class="btn btn-secondary btn-small" onclick="mostrarAdulto('{{ modelo.id }}')">
+                                👤 Adulto
+                            </button>
+                            <button type="button" class="btn-link" onclick="toggleCheckGroup('grupo-adulto-{{ modelo.id }}')">Marcar todos</button>
+                            {% endif %}
+                        </div>
+
+                        {% if modelo.tamanhos_infantil_disponiveis %}
+                        <div id="grupo-infantil-{{ modelo.id }}" class="tamanhos-section-group" style="display:none;">
+                            <strong>Selecione os tamanhos infantis disponíveis:</strong>
+                            <div class="tamanhos-section-grid">
+                                {% for n in modelo.tamanhos_infantil_disponiveis %}
+                                <label>
+                                    <input type="checkbox" name="tamanhos[]" value="{{ n }}">
+                                    {{ n }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if modelo.tamanhos_adulto_disponiveis %}
+                        <div id="grupo-adulto-{{ modelo.id }}" class="tamanhos-section-group" style="display:none;">
+                            <strong>Selecione os tamanhos adultos disponíveis:</strong>
+                            <div class="tamanhos-section-grid">
+                                {% for n in modelo.tamanhos_adulto_disponiveis %}
+                                <label>
+                                    <input type="checkbox" name="tamanhos[]" value="{{ n }}">
+                                    {{ n }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary btn-small">+ Adicionar</button>
+                    </form>
+                    {% else %}
+                    <div class="success-message">
+                        ✅ Todos os tamanhos já foram adicionados!
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div style="font-size: 64px; margin-bottom: 20px;">👟</div>
+        <h3 style="font-size: 24px; color: #374151; margin-bottom: 10px;">
+            Nenhum modelo cadastrado
+        </h3>
+        <p style="font-size: 16px; color: #6b7280;">
+            Use o formulário acima para criar seu primeiro modelo
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function mostrarInfantil(id) {
+    const grupoAdulto = document.getElementById("grupo-adulto-" + id);
+    const grupoInfantil = document.getElementById("grupo-infantil-" + id);
+    if (grupoAdulto) grupoAdulto.style.display = "none";
+    if (grupoInfantil) {
+        grupoInfantil.style.display = "block";
+        const first = grupoInfantil.querySelector('input[type="checkbox"]');
+        if (first) first.focus();
+    }
+}
+
+function mostrarAdulto(id) {
+    const grupoAdulto = document.getElementById("grupo-adulto-" + id);
+    const grupoInfantil = document.getElementById("grupo-infantil-" + id);
+    if (grupoInfantil) grupoInfantil.style.display = "none";
+    if (grupoAdulto) {
+        grupoAdulto.style.display = "block";
+        const first = grupoAdulto.querySelector('input[type="checkbox"]');
+        if (first) first.focus();
+    }
+}
+
+function toggleCheckGroup(groupId) {
+    const group = document.getElementById(groupId);
+    if (!group) return;
+    const boxes = Array.from(group.querySelectorAll('input[type="checkbox"]'));
+    if (boxes.length === 0) return;
+    const allChecked = boxes.every(b => b.checked);
+    boxes.forEach(b => b.checked = !allChecked);
+}
+
+function mostrarInfantilCriacao() {
+    document.getElementById("grupo-infantil-criacao").style.display = "block";
+    document.getElementById("grupo-adulto-criacao").style.display = "none";
+}
+
+function mostrarAdultoCriacao() {
+    document.getElementById("grupo-adulto-criacao").style.display = "block";
+    document.getElementById("grupo-infantil-criacao").style.display = "none";
+}
+</script>
+
+{% endblock %}

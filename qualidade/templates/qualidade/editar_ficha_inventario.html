@@ -1,0 +1,1093 @@
+{% extends 'qualidade/base.html' %}
+
+{% block header_title %}Editar Inventário{% endblock %}
+
+{% block content %}
+<style>
+    /* ========== LAYOUT GERAL ========== */
+    .ficha-header-info,
+    .add-item-section,
+    .stats-section,
+    .filters-section,
+    .items-table {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .ficha-header-info h2 {
+        font-size: 28px;
+        color: #111827;
+        margin-bottom: 10px;
+    }
+
+    .ficha-header-info p {
+        color: #6b7280;
+        margin-bottom: 5px;
+    }
+
+    .add-item-section h3 {
+        font-size: 22px;
+        color: #111827;
+        margin-bottom: 20px;
+    }
+
+    /* ========== FORMULÁRIOS ========== */
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-input,
+    .form-select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 15px;
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .form-group input[name="quantidade_pe_esquerdo"],
+    .form-group input[name="quantidade_pe_direito"] {
+        font-weight: 600;
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .form-group input[name="quantidade_pe_esquerdo"]:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input[name="quantidade_pe_direito"]:focus {
+        border-color: #764ba2;
+        box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1);
+    }
+
+    /* ========== TABELA ========== */
+    .items-table {
+        overflow: hidden;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+    }
+
+    td {
+        padding: 15px;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: middle;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    tbody tr:hover {
+        background: #f9fafb;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+    }
+
+    .color-badge {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #e5e7eb;
+        vertical-align: middle;
+        margin-right: 8px;
+    }
+
+    /* ========== CONTROLES DE QUANTIDADE ========== */
+    .quantity-controls-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .foot-section {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .foot-label {
+        font-weight: bold;
+        font-size: 13px;
+        color: #667eea;
+        min-width: 25px;
+        text-align: center;
+    }
+
+    .feet-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #e5e7eb 20%, #e5e7eb 80%, transparent);
+        margin: 4px 0;
+    }
+
+    .quantity-readonly {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        color: #374151;
+    }
+
+    .quantity-readonly span:not(.separator) {
+        font-weight: 600;
+    }
+
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .quantity-form {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .quantity-input {
+        width: 50px;
+        padding: 6px 4px;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    .current-quantity {
+        font-weight: bold;
+        font-size: 16px;
+        min-width: 30px;
+        text-align: center;
+        color: #374151;
+    }
+
+    .separator {
+        color: #9ca3af;
+        font-weight: normal;
+        font-size: 14px;
+    }
+
+    /* ========== BOTÕES ========== */
+    .btn-add,
+    .btn-remove {
+        padding: 6px 10px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        background-color: #f0f0f0;
+        transition: all 0.2s ease;
+        min-width: 36px;
+        height: 36px;
+    }
+
+    .btn-add:hover {
+        background-color: #4CAF50;
+        transform: scale(1.05);
+    }
+
+    .btn-remove:hover {
+        background-color: #f44336;
+        transform: scale(1.05);
+    }
+
+    .btn-danger.btn-icon {
+        padding: 6px 12px;
+        background-color: #f44336;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-danger.btn-icon:hover {
+        background-color: #d32f2f;
+        transform: scale(1.05);
+    }
+
+    /* ========== PAGINAÇÃO ========== */
+    .paginacao-wrapper {
+        padding: 20px;
+        border-top: 1px solid #e5e7eb;
+        background: #f9fafb;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .pagination li {
+        display: inline-block;
+    }
+
+    .pagination li a,
+    .pagination li span {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .pagination li a {
+        background: white;
+        color: #667eea;
+        border: 2px solid #e5e7eb;
+    }
+
+    .pagination li a:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .pagination li.active span {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: 2px solid transparent;
+        font-weight: 600;
+    }
+
+    .pagination li.disabled span {
+        background: #f3f4f6;
+        color: #9ca3af;
+        border: 2px solid #e5e7eb;
+        cursor: not-allowed;
+    }
+
+    /* ========== STATS ========== */
+    .stats-section {
+        padding: 20px;
+    }
+
+    .stats-section > div {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+    }
+
+    .stats-section > div > div {
+        text-align: center;
+    }
+
+    .stats-section > div > div > div:first-child {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 5px;
+    }
+
+    .stats-section > div > div > div:last-child {
+        font-size: 28px;
+        font-weight: bold;
+    }
+
+    /* ========== FILTROS ========== */
+    .filters-section h3 {
+        font-size: 18px;
+        color: #111827;
+        margin-bottom: 15px;
+    }
+
+    .filters-section form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .filters-section form > div:not(:last-child) {
+        flex: 1;
+        min-width: 150px;
+    }
+
+    .filters-section form > div:last-child {
+        display: flex;
+        gap: 8px;
+    }
+
+    .filters-section label {
+        display: block;
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 5px;
+    }
+
+    .filters-section .form-select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .filters-section .form-select:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .filters-section .btn {
+        white-space: nowrap;
+    }
+
+    /* ========== RESPONSIVIDADE PARA TABLETS (768px - 1024px) ========== */
+    @media screen and (max-width: 1024px) {
+        .ficha-header-info,
+        .add-item-section,
+        .stats-section,
+        .filters-section {
+            padding: 20px;
+        }
+
+        .form-row {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        td,
+        th {
+            padding: 12px 8px;
+            font-size: 14px;
+        }
+
+        .quantity-controls-wrapper {
+            gap: 10px;
+        }
+
+        .foot-label {
+            font-size: 12px;
+            min-width: 22px;
+        }
+
+        .quantity-controls {
+            gap: 6px;
+        }
+
+        .quantity-input {
+            width: 45px;
+            font-size: 13px;
+            padding: 5px 3px;
+        }
+
+        .btn-add,
+        .btn-remove {
+            min-width: 32px;
+            height: 32px;
+            font-size: 14px;
+            padding: 5px 8px;
+        }
+
+        .current-quantity {
+            font-size: 15px;
+        }
+
+        .color-badge {
+            width: 18px;
+            height: 18px;
+        }
+    }
+
+    /* ========== TABLETS PEQUENOS (600px - 768px) ========== */
+    @media screen and (max-width: 768px) {
+        .ficha-header-info,
+        .add-item-section,
+        .stats-section,
+        .filters-section {
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        table {
+            font-size: 13px;
+        }
+
+        td,
+        th {
+            padding: 10px 6px;
+        }
+
+        /* Filtros em coluna */
+        .filters-section form {
+            flex-direction: column;
+        }
+
+        .filters-section form > div {
+            width: 100%;
+        }
+
+        .filters-section form > div:last-child {
+            flex-direction: column;
+        }
+
+        .filters-section .btn {
+            width: 100%;
+        }
+
+        /* Ajustes para seções de pé */
+        .quantity-controls-wrapper {
+            gap: 15px;
+        }
+
+        .foot-section {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .foot-label {
+            font-size: 14px;
+            color: #667eea;
+            font-weight: bold;
+            width: 100%;
+            text-align: left;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .feet-divider {
+            height: 2px;
+            margin: 8px 0;
+        }
+
+        .quantity-controls {
+            flex-direction: column;
+            gap: 8px;
+            align-items: stretch;
+        }
+
+        .quantity-form {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .separator {
+            display: none;
+        }
+
+        .quantity-input {
+            width: 60px;
+        }
+
+        .current-quantity {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 8px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            margin-top: 4px;
+            font-size: 16px;
+        }
+
+        .quantity-readonly {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        /* Paginação responsiva */
+        .pagination {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .pagination li a,
+        .pagination li span {
+            width: 100%;
+            text-align: center;
+        }
+    }
+
+    /* ========== MOBILE (até 600px) ========== */
+    @media screen and (max-width: 600px) {
+        .ficha-header-info,
+        .add-item-section,
+        .stats-section,
+        .filters-section,
+        .items-table {
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        /* Transformar tabela em cards */
+        thead {
+            display: none;
+        }
+
+        table,
+        tbody,
+        tr,
+        td {
+            display: block;
+            width: 100%;
+        }
+
+        tr {
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        td {
+            padding: 10px 0;
+            border: none;
+            text-align: left;
+        }
+
+        td:before {
+            content: attr(data-label);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        .quantity-controls-wrapper {
+            gap: 20px;
+        }
+
+        .foot-section {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .foot-label {
+            font-size: 15px;
+            margin-bottom: 8px;
+        }
+
+        .feet-divider {
+            display: none;
+        }
+
+        .quantity-controls {
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .quantity-form {
+            flex: 1;
+            min-width: calc(50% - 5px);
+        }
+
+        .current-quantity {
+            flex: 1 0 100%;
+            margin-top: 10px;
+        }
+
+        .empty-state {
+            padding: 40px 15px;
+            font-size: 14px;
+        }
+
+        /* Paginação mobile */
+        .paginacao-wrapper {
+            padding: 15px;
+        }
+    }
+
+    /* ========== AJUSTES PARA DISPOSITIVOS TOUCH ========== */
+    @media (hover: none) and (pointer: coarse) {
+        .btn-add,
+        .btn-remove,
+        .btn-danger.btn-icon {
+            min-height: 44px;
+            min-width: 44px;
+        }
+
+        .pagination li a,
+        .pagination li span {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="ficha-header-info">
+    <h2 style="font-size: 28px; color: #111827; margin-bottom: 10px;">
+        📦 {{ ficha.nome_ficha }}
+    </h2>
+    <p style="color: #6b7280; margin-bottom: 5px;">
+        📅 {{ ficha.data|date:"d/m/Y" }} | 
+        👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }} | 
+        🏢 {{ ficha.setor }}
+    </p>
+    <div style="margin-top: 15px;">
+        <a href="{% url 'home' %}" class="btn btn-secondary">← Voltar</a>
+    </div>
+</div>
+
+{% if pode_editar %}
+<div class="add-item-section">
+    <h3 style="font-size: 22px; color: #111827; margin-bottom: 20px;">
+        ➕ Adicionar Item ao Inventário
+    </h3>
+    
+    <form id="formAdicionarItem" method="post" action="{% url 'editar_ficha_inventario' ficha.id %}">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Modelo</label>
+                <select name="modelo_id" id="selectModelo" class="form-select" required>
+                    <option value="">Selecione o modelo</option>
+                    {% for modelo in modelos %}
+                    <option value="{{ modelo.id }}">{{ modelo.nome }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Cor</label>
+                <select name="cor_id" id="selectCor" class="form-select" required disabled>
+                    <option value="">Primeiro selecione o modelo</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Tamanho</label>
+                <select name="tamanho_id" id="selectTamanho" class="form-select" required disabled>
+                    <option value="">Primeiro selecione a cor</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Quantidade Pé Esquerdo (PE)</label>
+                <input type="number" 
+                    name="quantidade_pe_esquerdo" 
+                    id="inputQuantidadePE" 
+                    class="form-input" 
+                    min="0" 
+                    value="0"
+                    required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Quantidade Pé Direito (PD)</label>
+                <input type="number" 
+                    name="quantidade_pe_direito" 
+                    id="inputQuantidadePD" 
+                    class="form-input" 
+                    min="0" 
+                    value="0"
+                    required>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            ➕ Adicionar Item
+        </button>
+    </form>
+</div>
+{% endif %}
+{% if itens %}
+<div class="stats-section" style="background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px;">
+        <div style="text-align: center;">
+            <div style="font-size: 14px; color: #6b7280; margin-bottom: 5px;">Total de Itens</div>
+            <div style="font-size: 28px; font-weight: bold; color: #111827;">{{ total_itens }}</div>
+        </div>
+        <div style="text-align: center;">
+            <div style="font-size: 14px; color: #6b7280; margin-bottom: 5px;">Total de Pares</div>
+            <div style="font-size: 28px; font-weight: bold; color: #059669;">{{ total_pares }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ========== SEÇÃO DE FILTROS ========== -->
+<div class="filters-section" style="background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <h3 style="font-size: 18px; color: #111827; margin-bottom: 15px;">
+        🔍 Filtrar Itens
+    </h3>
+    
+    <form method="get" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: end;">
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 5px;">Modelo</label>
+            <select name="modelo" class="form-select" style="width: 100%;">
+                <option value="">Todos os modelos</option>
+                {% for modelo in modelos_filtro %}
+                    <option value="{{ modelo.id }}"
+                        {% if modelo_selecionado == modelo.id|stringformat:"s" %}selected{% endif %}>
+                        {{ modelo.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 150px;">
+            <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 5px;">Cor</label>
+            <select name="cor" class="form-select" style="width: 100%;">
+                <option value="">Todas as cores</option>
+                {% for cor in cores_filtro %}
+                    <option value="{{ cor.id }}"
+                        {% if cor_selecionada == cor.id|stringformat:"s" %}selected{% endif %}>
+                        {{ cor.nome }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 120px;">
+            <label style="display: block; font-size: 13px; color: #6b7280; margin-bottom: 5px;">Tamanho</label>
+            <select name="numero" class="form-select" style="width: 100%;">
+                <option value="">Todos</option>
+                {% for numero in numeros_filtro %}
+                    <option value="{{ numero }}"
+                        {% if numero_selecionado == numero %}selected{% endif %}>
+                        Nº {{ numero }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+                🔍 Filtrar
+            </button>
+
+            {% if modelo_selecionado or cor_selecionada or numero_selecionado %}
+            <a href="{% url 'editar_ficha_inventario' ficha.id %}" 
+               class="btn btn-secondary" 
+               style="white-space: nowrap;">
+                🔄 Limpar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Mensagem quando não há resultados -->
+{% if not itens and modelos_filtro %}
+<div style="background: white; padding: 40px; border-radius: 15px; text-align: center; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+    <h3 style="font-size: 20px; color: #374151; margin-bottom: 10px;">
+        Nenhum item encontrado
+    </h3>
+    <p style="font-size: 15px; color: #6b7280; margin-bottom: 20px;">
+        Não há itens que correspondam aos filtros selecionados.
+    </p>
+    <a href="{% url 'editar_ficha_inventario' ficha.id %}" class="btn btn-primary">
+        🔄 Limpar Filtros e Ver Todos
+    </a>
+</div>
+{% endif %}
+<div class="items-table">
+    <table id="tabelaItens">
+        <thead>
+            <tr>
+                <th>Modelo</th>
+                <th>Cor</th>
+                <th>Tamanho</th>
+                <th>Quantidade</th>
+                {% if pode_editar %}
+                <th style="text-align: center;">Ações</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if itens %}
+            {% for item in itens_paginados %}
+                <tr data-item-id="{{ item.id }}">
+                    <td data-label="Modelo"><strong>{{ item.modelo.nome }}</strong></td>
+                    <td data-label="Cor">
+                        {% if item.cor.codigo_hex %}
+                        <span class="color-badge" style="background-color: {{ item.cor.codigo_hex }};"></span>
+                        {% endif %}
+                        {{ item.cor.nome }}
+                    </td>
+                    <td data-label="Tamanho">Nº {{ item.tamanho.numero }}</td>
+                    <td data-label="Quantidade">
+                        {% if pode_editar %}
+                        <div class="quantity-controls-wrapper">
+                            <!-- Controles para Pé Esquerdo -->
+                            <div class="foot-section">
+                                <span class="foot-label">PE</span>
+                                <div class="quantity-controls">
+                                    <!-- Adicionar PE -->
+                                    <form action="{% url 'atualizar_quantidade_item' item.id %}" method="post" class="quantity-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="acao" value="adicionar">
+                                        <input type="hidden" name="lado" value="PE">
+                                        <button type="submit" class="btn-add" title="Adicionar Pé Esquerdo">
+                                            ➕
+                                        </button>
+                                        <input type="number"
+                                            name="valor"
+                                            class="quantity-input"
+                                            placeholder="Qtd"
+                                            min="1"
+                                            value="1">
+                                    </form>
+
+                                    <span class="separator">/</span>
+
+                                    <!-- Subtrair PE -->
+                                    <form action="{% url 'atualizar_quantidade_item' item.id %}" method="post" class="quantity-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="acao" value="subtrair">
+                                        <input type="hidden" name="lado" value="PE">
+                                        <button type="submit" class="btn-remove" title="Remover Pé Esquerdo">
+                                            ➖
+                                        </button>
+                                        <input type="number"
+                                            name="valor"
+                                            class="quantity-input"
+                                            placeholder="Qtd"
+                                            min="1"
+                                            value="1">
+                                    </form>
+
+                                    <span class="separator">/</span>
+
+                                    <!-- Quantidade atual PE -->
+                                    <span class="current-quantity">
+                                        {{ item.quantidade_pe_esquerdo }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Divisor entre pés -->
+                            <div class="feet-divider"></div>
+
+                            <!-- Controles para Pé Direito -->
+                            <div class="foot-section">
+                                <span class="foot-label">PD</span>
+                                <div class="quantity-controls">
+                                    <!-- Adicionar PD -->
+                                    <form action="{% url 'atualizar_quantidade_item' item.id %}" method="post" class="quantity-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="acao" value="adicionar">
+                                        <input type="hidden" name="lado" value="PD">
+                                        <button type="submit" class="btn-add" title="Adicionar Pé Direito">
+                                            ➕
+                                        </button>
+                                        <input type="number"
+                                            name="valor"
+                                            class="quantity-input"
+                                            placeholder="Qtd"
+                                            min="1"
+                                            value="1">
+                                    </form>
+
+                                    <span class="separator">/</span>
+
+                                    <!-- Subtrair PD -->
+                                    <form action="{% url 'atualizar_quantidade_item' item.id %}" method="post" class="quantity-form">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="acao" value="subtrair">
+                                        <input type="hidden" name="lado" value="PD">
+                                        <button type="submit" class="btn-remove" title="Remover Pé Direito">
+                                            ➖
+                                        </button>
+                                        <input type="number"
+                                            name="valor"
+                                            class="quantity-input"
+                                            placeholder="Qtd"
+                                            min="1"
+                                            value="1">
+                                    </form>
+
+                                    <span class="separator">/</span>
+
+                                    <!-- Quantidade atual PD -->
+                                    <span class="current-quantity">
+                                        {{ item.quantidade_pe_direito }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="quantity-readonly">
+                            <span>PE: {{ item.quantidade_pe_esquerdo }}</span>
+                            <span class="separator">|</span>
+                            <span>PD: {{ item.quantidade_pe_direito }}</span>
+                        </div>
+                        {% endif %}
+                        </td>
+                        {% if pode_editar %}
+                        <td data-label="Ações" style="text-align: center;">
+                            <form method="post" action="{% url 'remover_item_inventario' item.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-icon">
+                                    🗑️
+                                </button>
+                            </form>
+                        </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="{% if pode_editar %}5{% else %}4{% endif %}" class="empty-state">
+                    📦 Nenhum item adicionado ainda
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    {% if itens_paginados.paginator.num_pages > 1 %}
+    <div class="paginacao-wrapper">
+        <nav>
+            <ul class="pagination">
+
+                {% if itens_paginados.has_previous %}
+                    <li>
+                        <a href="?page={{ itens_paginados.previous_page_number }}">‹ Anterior</a>
+                    </li>
+                {% else %}
+                    <li class="disabled"><span>‹ Anterior</span></li>
+                {% endif %}
+
+                <li class="active">
+                    <span>
+                        Página {{ itens_paginados.number }} de {{ itens_paginados.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if itens_paginados.has_next %}
+                    <li>
+                        <a href="?page={{ itens_paginados.next_page_number }}">Próxima ›</a>
+                    </li>
+                {% else %}
+                    <li class="disabled"><span>Próxima ›</span></li>
+                {% endif %}
+
+            </ul>
+        </nav>
+    </div>
+{% endif %}
+
+</div>
+<script>
+const selectModelo = document.getElementById("selectModelo");
+const selectCor = document.getElementById("selectCor");
+const selectTamanho = document.getElementById("selectTamanho");
+
+selectModelo.addEventListener("change", function () {
+    const idModelo = this.value;
+
+    selectCor.innerHTML = "<option>Carregando...</option>";
+    selectCor.disabled = true;
+
+    selectTamanho.innerHTML = "<option>Primeiro selecione a cor</option>";
+    selectTamanho.disabled = true;
+
+    if (!idModelo) return;
+
+    fetch(`/api/get_cores/${idModelo}/`)
+        .then(response => response.json())
+        .then(data => {
+            selectCor.innerHTML = '<option value="">Selecione a cor</option>';
+
+            data.cores.forEach(cor => {
+                selectCor.innerHTML += `<option value="${cor.id}">${cor.nome}</option>`;
+            });
+
+            selectCor.disabled = false;
+        });
+});
+
+selectCor.addEventListener("change", function () {
+    const corId = this.value;
+    const modeloId = document.getElementById("selectModelo").value;
+
+    if (!corId || !modeloId) {
+        return;
+    }
+
+    fetch(`/api/get_tamanhos/${corId}/?modelo_id=${modeloId}`)
+        .then(response => response.json())
+        .then(data => {
+            const selectTamanho = document.getElementById("selectTamanho");
+            selectTamanho.innerHTML = "";
+
+            if (data.tamanhos && data.tamanhos.length > 0) {
+                data.tamanhos.forEach(t => {
+                    selectTamanho.innerHTML += `
+                        <option value="${t.id}">${t.numero}</option>
+                    `;
+                });
+
+                selectTamanho.disabled = false;
+            } else {
+                selectTamanho.innerHTML = `<option value="">Nenhum tamanho encontrado</option>`;
+                selectTamanho.disabled = true;
+            }
+        })
+        .catch(err => console.error("Erro ao carregar tamanhos:", err));
+});
+</script>
+
+{% endblock %}

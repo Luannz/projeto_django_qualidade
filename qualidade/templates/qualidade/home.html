@@ -168,21 +168,12 @@
             ➕ Nova Ficha
         </a>
         {% else %}
-        <a href="{% url 'relatorios' %}" class="btn btn-success">
-            📊 Relatórios
-        </a>
-        <a href="{% url 'gerenciar_partes' %}" class="btn btn-success">
-            🔧 Gerenciar Partes
-        </a>
-        <a href="{% url 'gerenciar_operadores' %}" class="btn btn-success">
-            👤 Gerenciar Operadores
-        </a>
-        <a href="{% url 'telas' %}" class="btn btn-success">
-            🖥️ Telas
-        </a>
-        <a href="{% url 'lixeira_fichas' %}" class="btn btn-danger">
-            🗑️ Lixeira de Fichas
-        </a>
+        <a href="{% url 'relatorios' %}" class="btn btn-success">📊 Relatórios</a>
+        <a href="{% url 'gerenciar_partes' %}" class="btn btn-success">🔧 Gerenciar Partes</a>
+        <a href="{% url 'gerenciar_operadores' %}" class="btn btn-success">👤 Gerenciar Operadores</a>
+        <a href="{% url 'gerenciar_modelos' %}" class="btn btn-success">👟 Gerenciar Modelos</a>
+        <a href="{% url 'telas' %}" class="btn btn-success">🖥️ Telas</a>
+        <a href="{% url 'lixeira_fichas' %}" class="btn btn-danger">🗑️ Lixeira de Fichas</a>
         
         {% endif %}
         
@@ -209,7 +200,8 @@
                 <div class="ficha-title">{{ ficha.nome_ficha }}</div>
                 <div class="ficha-info">
                     📅 {{ ficha.data|date:"d/m/Y" }}<br>
-                    👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }}
+                    👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }}<br>
+                    🏢 {{ ficha.setor }}
                 </div>
             </div>
             <span class="ficha-badge">
@@ -219,31 +211,24 @@
         
         <div class="ficha-actions">
             {% if perfil.tipo == 'operador' and ficha.operador == user %}
-            <a href="{% url 'editar_ficha' ficha.id %}" class="btn btn-primary btn-small">
-                ✏️ Editar
-            </a>
+            <a href="{% url 'editar_ficha' ficha.id %}" class="btn btn-primary btn-small">✏️ Editar</a>
             {% endif %}
             
-            <a href="{% url 'visualizar_ficha' ficha.id %}" class="btn btn-secondary btn-small">
-                👁️ Ver
-            </a>
+            <a href="{% url 'visualizar_ficha' ficha.id %}" class="btn btn-secondary btn-small">👁️ Ver</a>
             
             {% if perfil.tipo == 'qualidade' %}
-            <a href="{% url 'gerar_relatorio' ficha.id %}" class="btn btn-success btn-small">
-                📄 PDF
-            </a>
+            <a href="{% url 'gerar_relatorio' ficha.id %}" class="btn btn-success btn-small">📄 PDF</a>
             
             <form method="post" action="{% url 'excluir_ficha' ficha.id %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja mover esta ficha para a lixeira?');">
                 {% csrf_token %}
-                <button type="submit" class="btn btn-danger btn-small">
-                    🗑️
-                </button>
+                <button type="submit" class="btn btn-danger btn-small">🗑️</button>
             </form>
             {% endif %}
         </div>
     </div>
     {% endfor %}
 </div>
+
 {% if fichas.has_other_pages %}
 <div class="pagination-container">
     {% if fichas.has_previous %}
@@ -263,8 +248,53 @@
     {% endif %}
 </div>
 {% endif %}
+{% endif %}
 
-{% else %}
+{% if fichas_inventario %}
+<hr style="margin: 40px 0;">
+
+<h2 style="font-size: 22px; margin-bottom: 15px; color:#111827;">
+    Fichas de Inventário
+</h2>
+
+<div class="fichas-grid">
+    {% for ficha in fichas_inventario %}
+    <div class="ficha-card" style="padding: 18px;">
+        <div class="ficha-header">
+            <div>
+                <div class="ficha-title" style="font-size:18px;">
+                    Inventário – {{ ficha.nome_ficha|default:"Sem nome" }}
+                </div>
+                <div class="ficha-info">
+                    📅 {{ ficha.data|date:"d/m/Y" }}<br>
+                    👤 {{ ficha.operador.get_full_name|default:ficha.operador.username }}
+                </div>
+            </div>
+
+            <span class="ficha-badge">
+                {{ fichas_inventario.total_pares }} item
+            </span>
+        </div>
+
+        <div class="ficha-actions">
+            {% if perfil.tipo == 'operador' and ficha.operador == user %}
+            <a href="{% url 'editar_ficha_inventario' ficha.id %}" class="btn btn-primary btn-small">✏️ Editar</a>
+            {% endif %}
+            <a href="{% url 'visualizar_ficha_inventario' ficha.id %}" class="btn btn-secondary btn-small">👁️ Ver</a>
+            {% if perfil.tipo == 'qualidade' %}
+            <a href="{% url 'gerar_relatorio_ficha_inventario' ficha.id %}" class="btn btn-success btn-small">📄 PDF</a>
+            <form method="post" action="{% url 'excluir_ficha_inventario' ficha.id %}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja mover esta ficha para a lixeira?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger btn-small">🗑️</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not fichas and not fichas_inventario %}
 <div class="empty-state">
     <div class="empty-icon">📋</div>
     <h3 style="font-size: 24px; color: #374151; margin-bottom: 10px;">
@@ -279,4 +309,5 @@
     </p>
 </div>
 {% endif %}
+
 {% endblock %}

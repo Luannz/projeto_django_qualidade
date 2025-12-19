@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 import json
 
-from ..models import Ficha, ParteCalcado, RegistroParte
+from ..models import Ficha, ParteCalcado, RegistroParte, ModeloCalcado, Cor, ItemInventario, FichaInventario, TamanhoModelo
 
 
 @login_required
@@ -23,7 +23,12 @@ def adicionar_parte_ficha(request, ficha_id):
         return JsonResponse({'error': 'Sem permissão'}, status=403)
     
     try:
-        data = json.loads(request.body)
+
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        
         parte_id = data.get('parte_id')
         
         if not parte_id:
@@ -149,3 +154,53 @@ def remover_quantidade(request, ficha_id, parte_id):
         return JsonResponse({'error': 'Registro não encontrado'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+
+## API'S DAS FICHAS DE INVENTÁRIO ##
+
+@login_required
+def api_atualizar_item(request, item_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False})
+
+    item = get_object_or_404(ItemInventario, id=item_id)
+    quantidade = int(request.POST.get('quantidade', 0))
+
+    if quantidade < 0:
+        return JsonResponse({'success': False, 'message': 'Quantidade inválida'})
+
+    item.quantidade = quantidade
+    item.save()
+
+    return JsonResponse({'success': True})
+
+
+def get_cores(request, id_modelo):
+    modelo = get_object_or_404(ModeloCalcado, id=id_modelo, excluido=False)
+    
+    cores = modelo.cores.filter(excluido=False)
+
+    data = [
+        {"id": cor.id, "nome": cor.nome}
+        for cor in cores
+    ]
+
+    return JsonResponse({"cores": data})
+
+def get_tamanhos(request, id_cor):
+    modelo_id = request.GET.get("modelo_id")
+
+    if not modelo_id:
+        return JsonResponse({"error": "modelo_id é obrigatório"}, status=400)
+
+    tamanhos = TamanhoModelo.objects.filter(
+        modelo_id=modelo_id,
+        cor_id=id_cor,
+        ativo=True,
+        excluido=False
+    ).order_by("numero")
+
+    data = [{"id": t.id, "numero": t.numero} for t in tamanhos]
+
+    return JsonResponse({"tamanhos": data})
+

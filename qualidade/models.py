@@ -45,6 +45,7 @@ class Ficha(models.Model):
         ('qualidade', 'Qualidade'),
     ]
 
+    setor = models.CharField(max_length=25, blank=True, null=True, verbose_name="setor")
     operador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fichas')
     data = models.DateField()
     nome_ficha = models.CharField(max_length=200)
@@ -52,13 +53,7 @@ class Ficha(models.Model):
     atualizada_em = models.DateTimeField(auto_now=True)
     excluido = models.BooleanField(default=False)
     excluido_em = models.DateTimeField(null=True, blank=True)
-    excluido_por = models.ForeignKey(
-        User,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name='fichas_excluidas'
-    )
+    excluido_por = models.ForeignKey(User,null=True,blank=True,on_delete=models.SET_NULL,related_name='fichas_excluidas')
 
     class Meta:
         verbose_name = 'Ficha'
@@ -67,6 +62,15 @@ class Ficha(models.Model):
 
     def __str__(self):
         return f"{self.nome_ficha} - {self.data} - {self.operador.username}"
+    
+    def save(self, *args, **kwargs):
+    # Preenche o setor automaticamente com o nome do grupo do usuário
+        if not self.setor and self.operador:
+            grupo = self.operador.groups.first()
+            print(f"DEBUG - Operador: {self.operador.username}")
+            print(f"DEBUG - Grupo encontrado: {grupo.name if grupo else 'Nenhum'}")
+            self.setor = grupo.name if grupo else None
+        super().save(*args, **kwargs)
 
     def excluir(self, usuario):
         """Marca a ficha como excluída e registra quem excluiu"""
@@ -75,6 +79,10 @@ class Ficha(models.Model):
         self.excluido_em = timezone.now()
         self.excluido_por = usuario
         self.save()
+    @property
+    def tipo_ficha(self):
+        """Retorna o tipo da ficha"""
+        return 'Ficha'
 
 
 
@@ -109,6 +117,7 @@ class PerfilUsuario(models.Model):
     TIPO_PERFIL = [
         ('operador', 'Operador'),
         ('qualidade', 'Qualidade'),
+        ('loja', 'Loja'),
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='perfil')
@@ -120,3 +129,112 @@ class PerfilUsuario(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_tipo_display()}"
+    
+
+## ---MODELS DO INVENTÁRIO DA INJETORA--- ##
+
+class Cor(models.Model):
+    nome = models.CharField(max_length=50, unique=True)
+    ativo = models.BooleanField(default=True)
+    ordem = models.IntegerField(default=0)
+    excluido = models.BooleanField(default=False)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='cores_criadas')
+    excluido_por = models.ForeignKey(User,null=True,blank=True,on_delete=models.SET_NULL,related_name='cores_excluidas')
+
+    def __str__(self):
+        return self.nome
+
+class ModeloCalcado(models.Model):
+    """Modelo de calçado para inventário"""
+    nome = models.CharField(max_length=100,unique=True, verbose_name="Nome do Modelo")
+    ativo = models.BooleanField(default=True)
+    excluido = models.BooleanField(default=False)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='modelos_criados')
+    excluido_por = models.ForeignKey(User,null=True,blank=True,on_delete=models.SET_NULL,related_name='modelos_excluidas')
+    cores = models.ManyToManyField(Cor, related_name='modelos')
+    
+    class Meta:
+        verbose_name = 'Modelo de Calçado'
+        verbose_name_plural = 'Modelos de Calçado'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return self.nome
+
+class TamanhoModelo(models.Model):
+    """Tamanhos disponíveis para cada modelo e cor"""
+    modelo = models.ForeignKey(ModeloCalcado, on_delete=models.CASCADE, related_name='tamanhos')
+    cor = models.ForeignKey(Cor, on_delete=models.CASCADE, related_name='tamanhos')
+    numero = models.CharField(max_length=10, verbose_name="Número/Tamanho")
+    ativo = models.BooleanField(default=True)
+    excluido = models.BooleanField(default=False)
+    
+    class Meta:
+        verbose_name = 'Tamanho do Modelo'
+        verbose_name_plural = 'Tamanhos dos Modelos'
+        ordering = ['numero']
+        unique_together = ['modelo', 'cor', 'numero']
+    
+    def __str__(self):
+        return f"{self.modelo.nome} - {self.cor.nome} - {self.numero}"
+
+
+class FichaInventario(models.Model):
+    """Ficha de inventário para setor INJETORA"""
+    operador = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fichas_inventario')
+    data = models.DateField()
+    nome_ficha = models.CharField(max_length=200)
+    setor = models.CharField(max_length=50, default='Injetora')
+    criada_em = models.DateTimeField(auto_now_add=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+    excluido = models.BooleanField(default=False)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+    excluido_por = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='fichas_inventario_excluidas')
+    
+    class Meta:
+        verbose_name = 'Ficha de Inventário'
+        verbose_name_plural = 'Fichas de Inventário'
+        ordering = ['-data', '-criada_em']
+    
+    def __str__(self):
+        return f"{self.nome_ficha} - {self.data} - {self.operador.username}"
+    
+    def save(self, *args, **kwargs):
+        if not self.setor and self.operador:
+            grupo = self.operador.groups.first()
+            self.setor = grupo.name if grupo else 'Injetora'
+        super().save(*args, **kwargs)
+
+    def model_name(self):
+        return self._meta.model_name
+    @property
+    def tipo_ficha(self):
+        """Retorna o tipo da ficha"""
+        return 'Inventario'
+
+
+class ItemInventario(models.Model):
+    """Item individual do inventário"""
+    ficha = models.ForeignKey(FichaInventario, on_delete=models.CASCADE, related_name='itens')
+    modelo = models.ForeignKey(ModeloCalcado, on_delete=models.CASCADE)
+    cor = models.ForeignKey(Cor, on_delete=models.CASCADE)
+    tamanho = models.ForeignKey(TamanhoModelo, on_delete=models.CASCADE)
+    quantidade_pe_direito = models.IntegerField(default=0, verbose_name="Quantidade Pé Direito")
+    quantidade_pe_esquerdo = models.IntegerField(default=0, verbose_name="Quantidade Pé Esquerdo")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Item de Inventário'
+        verbose_name_plural = 'Itens de Inventário'
+        ordering = ['modelo__nome', 'cor__nome', 'tamanho__numero']
+        unique_together = ['ficha', 'modelo', 'cor', 'tamanho']
+    
+    def __str__(self):
+        return f"{self.modelo.nome} - {self.cor.nome} - Nº{self.tamanho.numero} - {self.quantidade} pares"
+    
+    

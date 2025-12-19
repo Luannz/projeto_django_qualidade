@@ -35,4 +35,18 @@ def map_attr(value, attr):
     except Exception:
         return []
 
+@register.filter
+def unique(value):
+    """Remove duplicatas de uma lista mantendo a ordem"""
+    seen = set()
+    result = []
+    for item in value:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
+
+@register.filter
+def range(start, end):
+    return range(start, end)
 

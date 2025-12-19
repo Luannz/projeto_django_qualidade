@@ -186,6 +186,9 @@
             <div class="header-info">
                 <span class="user-badge">
                     {{ user.username }} - {{ user.perfil.get_tipo_display }}
+                    {% if user.groups.first %}
+                        - {{ user.groups.first.name }}
+                    {% endif %}
                 </span>
                 <a href="{% url 'logout' %}" class="btn btn-secondary">Sair</a>
             </div>

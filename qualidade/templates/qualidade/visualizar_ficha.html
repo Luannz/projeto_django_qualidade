@@ -173,6 +173,10 @@
             <span>🕐</span>
             <span>Criada em {{ ficha.criada_em|date:"d/m/Y H:i" }}</span>
         </div>
+        <div class="meta-item">
+            <span>🏢</span>
+            <span>{{ ficha.setor }}</span>
+        </div>
     </div>
 </div>
 
@@ -227,7 +231,13 @@
     <a href="{% url 'home' %}" class="btn btn-secondary">← Voltar</a>
     
     {% if user.perfil.tipo == 'operador' and ficha.operador == user %}
-    <a href="{% url 'editar_ficha' ficha.id %}" class="btn btn-primary">✏️ Editar</a>
+
+        {% if ficha.model_name == 'fichainventario' %}
+            <a href="{% url 'editar_ficha_inventario' ficha.id %}" class="btn btn-primary">✏️ Editar</a>
+        {% else %}
+            <a href="{% url 'editar_ficha' ficha.id %}" class="btn btn-primary">✏️ Editar</a>
+        {% endif %}
+
     {% endif %}
     
     {% if user.perfil.tipo == 'qualidade' %}

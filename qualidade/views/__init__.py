@@ -10,6 +10,7 @@ from .operadores import *
 from .api import * 
 from .relatorios import *
 from .dashboard import *
+from .inventario import *
 
 __all__ = [
     # Auth
@@ -37,6 +38,13 @@ __all__ = [
     'remover_parte_ficha',
     'adicionar_quantidade',
     'remover_quantidade',
+    'api_cores_por_modelo',
+    'api_tamanhos_por_modelo_e_cor',
+    'api_remover_item',
+    'api_atualizar_item',
+    'api_adicionar_item_inventario',
+    'get_cores',
+    'get_tamanhos',
     
     # Relatórios
     'relatorios',
@@ -45,4 +53,13 @@ __all__ = [
     
     # Dashboard
     'telas',
+
+    #Inventário
+    'criar_ficha_inventario',
+    'editar_ficha_inventario',
+    'get_cores_modelo',
+    'get_tamanhos_modelo',
+    'adicionar_item_inventario',
+    'atualizar_quantidade_item',
+    'remover_item_inventario',
 ]

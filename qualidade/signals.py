@@ -11,7 +11,6 @@ GRUPOS_PADRAO = [
     'Qualidade',
     'Corte',
     'Injetora',
-    'Loja',
 ]
 
 USUARIOS_PADRAO = [
@@ -30,11 +29,6 @@ USUARIOS_PADRAO = [
         'password': 'lynd1234',
         'grupo': 'Injetora',
     },
-    {
-        'username': 'Loja01',
-        'password': 'lynd1234',
-        'grupo': 'Loja',
-    }
 ]
 
 

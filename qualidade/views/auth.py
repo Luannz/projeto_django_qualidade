@@ -18,11 +18,8 @@ def login_view(request):
         if user is not None:
             login(request, user)
 
-            # 🔥 redireciona conforme o tipo
+            # redireciona conforme o tipo
             perfil = getattr(user, 'perfil', None)
-
-            if perfil and perfil.tipo == 'loja':
-                return redirect('compras:home')
 
             return redirect('home')
 

@@ -1,7 +1,7 @@
 services:
   db-qualidade:
     image: postgres:15
-    container_name: manutencao_db
+    container_name: qualidade_db
     restart: always
     environment:
       - POSTGRES_DB=${DB_NAME}
@@ -14,7 +14,7 @@ services:
     build: .
     container_name: qualidade_web
     restart: always
-   
+
     ports:
       - "8001:8000"
     command: >

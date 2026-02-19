@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Sistema Qualidade{% endblock %}</title>
+    <title>{% block title %}Lynd|Gestor de Produção{% endblock %}</title>
     <style>
         * {
             margin: 0;
@@ -182,7 +182,7 @@
     <div class="container">
         {% if user.is_authenticated %}
         <div class="header">
-            <h1>{% block header_title %}Sistema de Qualidade{% endblock %}</h1>
+            <h1>{% block header_title %}Gestor de Produção{% endblock %}</h1>
             <div class="header-info">
                 <span class="user-badge">
                     {{ user.username }} - {{ user.perfil.get_tipo_display }}
